@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <title>Text TV</title>
+    <style>
+      body {
+        font-family: monospace;
+        background-color: white;
+        color: black;
+        white-space: pre-wrap;
+      }
+      .text {
+        text-align: center;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: black;
+          color: white;
+        }
+        a {
+          color: #00bfff;
+        }
+      }
+    </style>
+    <script type="module">
+      const target = document.querySelector("main");
+      const pageNumber = new URLSearchParams(window.location.search).get("page") || "100";
+      fetch(`https://www.svt.se/text-tv/webb/${pageNumber}`)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          const text = doc.querySelector("[class*='TextContent_textWrapper']");
+          text.querySelectorAll("div[class^='TextContent_textContent__']").forEach(el => (el.className = "text"));
+          text.querySelectorAll("a[href]").forEach(link => (link.href = `?page=${link.getAttribute("href")}`));
+          target.innerHTML = text.innerHTML;
+        })
+        .catch(err => (console.error("Error loading page:", err), (target.innerHTML = "Kunde inte ladda sidan.")));
+    </script>
+  </head>
+
+  <body>
+    <main></main>
+  </body>
+</html>
