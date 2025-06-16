@@ -9,6 +9,13 @@
         font-family: monospace;
         white-space: pre-wrap;
         text-align: center;
+        text-wrap-mode: nowrap;
+      }
+      footer {
+        font-size: 0.5em;
+        position: fixed;
+        bottom: 0;
+        width: 100%;
       }
       @media (prefers-color-scheme: dark) {
         body {
@@ -34,8 +41,8 @@
 
   <body>
     <main></main>
-    <footer style="font-size: 0.8em;">
-      <p>Text TV är en tjänst från <a href="https://www.svt.se/text-tv" target="_blank">SVT</a>.</p>
+    <footer>
+      <p>Text TV är en tjänst från <a href="https://www.svt.se/text-tv" target="_blank">SVT</a>. Denna sida är inte officiell och detta är <a href="https://github.com/albertaillet/texttv" target="_blank">koden</a>.</p>
     </footer>
   </body>
 </html>
