@@ -10,17 +10,18 @@
         height: 98%;
         text-align: center;
         font-family: monospace;
-        font-size: 10pt;
       }
       body {
         display: flex;
         flex-direction: column;
       }
+      /* Article has at most 43 characters per line, including the newline */
       article {
         flex: 1 1;
-        overflow-y: auto;
+        overflow-y: auto; /* Allow vertical scrolling */
         white-space: pre-wrap;
         text-wrap-mode: nowrap;
+        font-size: min(3.5cqw, 10pt); /* Responsive font size when the viewport is narrow */
       }
       footer {
         flex: 0 1;
