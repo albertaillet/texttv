@@ -10,12 +10,12 @@
         white-space: pre-wrap;
         text-align: center;
         text-wrap-mode: nowrap;
+        display: flex;
+        flex-direction: column;
+        min-height: 90vh;
       }
-      footer {
-        font-size: 0.5em;
-        position: fixed;
-        bottom: 0;
-        width: 100%;
+      article {
+        flex-grow: 1; /* Fills the remaining space */
       }
       @media (prefers-color-scheme: dark) {
         body {
@@ -28,22 +28,59 @@
       }
     </style>
     <script type="module">
-      const target = document.querySelector("main");
+      const article = document.getElementById("article");
+      const prev = document.getElementById("prev");
+      const next = document.getElementById("next");
+      const input = document.getElementById("input");
+      const svt = document.getElementById("svt");
+
       const pageNumber = new URLSearchParams(window.location.search).get("page") || "100";
-      document.title = `Text TV ${pageNumber}`;
+
       fetch(`https://www.svt.se/text-tv/api/${pageNumber}`)
         .then(res => res.json())
-        // Regex all numbers with 3 digits and boundaries and convert to anchor tags
-        .then(data => (target.innerHTML = data.data.subPages[0].altText.replace(/\b(\d{3})\b/g, p => `<a href="?page=${p}">${p}</a>`)))
-        .catch(err => (console.error("Error loading page:", err), (target.innerHTML = "Kunde inte ladda sidan.")));
+        .then(data => {
+          (prev.href = `?page=${data.data.prevPage}`), (next.href = `?page=${data.data.nextPage}`);
+          return data;
+        })
+        .then(data => {
+          if (data.status === "fail") throw new Error("Sidan kunde inte hittas.");
+          return data;
+        })
+        .then(data =>
+          data.data.subPages
+            .map(page => page.altText)
+            .join("")
+            // Regex all numbers with 3 digits and boundaries and convert to anchor tags
+            .replace(/\b(\d{3})\b/g, p => `<a href="?page=${p}">${p}</a>`)
+        )
+        .catch(err => `Ett fel uppstod:<br />${err.message}`)
+        .then(text => (article.innerHTML = text));
+
+      document.title = `Text TV ${pageNumber}`;
+      svt.href = `https://www.svt.se/text-tv/webb/${pageNumber}`;
+      input.value = pageNumber;
+      input.addEventListener("change", e => (window.location.href = `?page=${e.target.value}`));
+
+      // Keyboard navigation (Arrow keys, vim, wasd)
+      const keyToLink = { ArrowLeft: prev, ArrowRight: next, h: prev, l: next, a: prev, d: next };
+      document.addEventListener("keydown", e => {
+        if (keyToLink[e.key]) keyToLink[e.key].click();
+      });
     </script>
   </head>
 
   <body>
-    <main></main>
+    <article id="article"></article>
     <footer>
-      <div>Text TV är en tjänst från <a href="https://www.svt.se/text-tv" target="_blank">SVT</a>.</div>
-      <div>Denna sida är inte officiell och detta är <a href="https://github.com/albertaillet/texttv" target="_blank">koden</a>.</div>
+      <nav>
+        <!-- prettier-ignore -->
+        <div><a id="prev">förra sidan</a>  <a id="next">nästa sida</a> </div>
+        <div><input id="input" type="number" min="100" max="999" /></div>
+      </nav>
+      <div style="font-size: 0.5rem">
+        <div>Text TV är en tjänst från <a id="svt" href="https://www.svt.se/text-tv/webb" target="_blank">SVT</a>.</div>
+        <div>Denna sida är inte officiell och detta är <a href="https://github.com/albertaillet/texttv" target="_blank">koden</a>.</div>
+      </div>
     </footer>
   </body>
 </html>
