@@ -30,6 +30,10 @@
         text-decoration: none;
         font-size: xxx-large;
       }
+      input {
+        font-size: large;
+        text-align: inherit;
+      }
       @media (prefers-color-scheme: dark) {
         body {
           background-color: black;
@@ -46,6 +50,8 @@
       const next = document.getElementById("next");
       const input = document.getElementById("input");
       const svt = document.getElementById("svt");
+      const infoBtn = document.getElementById("info-btn");
+      const infoModal = document.getElementById("info-modal");
 
       const pageNumber = new URLSearchParams(window.location.search).get("page") || "100";
 
@@ -70,34 +76,49 @@
         .then(text => (article.innerHTML = text));
 
       document.title = `Text TV ${pageNumber}`;
-      //svt.href = `https://www.svt.se/text-tv/webb/${pageNumber}`;
+      svt.href = `https://www.svt.se/text-tv/webb/${pageNumber}`;
       input.value = pageNumber;
       input.addEventListener("change", e => (window.location.href = `?page=${e.target.value}`));
 
       // Keyboard navigation (Arrow keys, vim, wasd)
       const keyToLink = { ArrowLeft: prev, ArrowRight: next, h: prev, l: next, a: prev, d: next };
       document.addEventListener("keydown", e => {
+        if (document.activeElement === input) return; // Ignore if input is focused
         if (keyToLink[e.key]) keyToLink[e.key].click();
+        if (e.key === "i") infoBtn.click();
+        if (e.key === "e") {
+          e.preventDefault(); // Prevent default action for 'e' key
+          input.focus();
+          input.select();
+        }
       });
+
+      // Modal for info button
+      infoBtn.addEventListener("click", () => infoModal.showModal());
+      infoModal.addEventListener("click", e => (e.target === infoModal ? infoModal.close() : null));
     </script>
   </head>
-
   <body>
     <article id="article"></article>
     <footer>
       <nav>
         <div>
           <a id="prev" title="förra sidan">&larr;</a>
-          <input id="input" type="number" min="100" max="999" />
+          <input id="input" type="text" inputmode="numeric" size="3" minlength="3" maxlength="3" />
           <a id="next" title="nästa sida">&rarr;</a>
         </div>
       </nav>
+      <button id="info-btn" style="position: absolute; bottom: 10px; right: 10px">Om webbsidan</button>
     </footer>
+    <dialog id="info-modal">
+      <form method="dialog"><button style="float: right">X</button></form>
+      <p>Text TV är en tjänst från <a id="svt" href="https://www.svt.se/text-tv/webb" target="_blank">SVT</a>.</p>
+      <p>Denna sida är inte officiell och detta är <a href="https://github.com/albertaillet/texttv" target="_blank">koden</a>.</p>
+      <p>Tangentbordskommandon:</p>
+      <p>[&larr;], [A] eller [H] för förra sidan</p>
+      <p>[&rarr;], [D] eller [L] för nästa sida</p>
+      <p>[E] för att ändra sidan</p>
+      <p>[I] för att öppna denna dialog</p>
+    </dialog>
   </body>
 </html>
-
-<!-- <details style="position: absolute; bottom: 0">
-  <summary>Om Text TV</summary>
-  <div>Text TV är en tjänst från <a id="svt" href="https://www.svt.se/text-tv/webb" target="_blank">SVT</a>.</div>
-  <div>Denna sida är inte officiell och detta är <a href="https://github.com/albertaillet/texttv" target="_blank">koden</a>.</div>
-</details> -->
