@@ -5,17 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Text TV</title>
     <style>
+      html,
       body {
-        font-family: monospace;
-        white-space: pre-wrap;
+        height: 98%;
         text-align: center;
-        text-wrap-mode: nowrap;
+        font-family: monospace;
+      }
+      body {
         display: flex;
         flex-direction: column;
-        min-height: 90vh;
       }
       article {
-        flex-grow: 1; /* Fills the remaining space */
+        flex: 1 1;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        text-wrap-mode: nowrap;
+      }
+      footer {
+        flex: 0 1;
+        border-top: 1px solid;
+      }
+      #prev,
+      #next {
+        text-decoration: none;
+        font-size: xxx-large;
       }
       @media (prefers-color-scheme: dark) {
         body {
@@ -57,7 +70,7 @@
         .then(text => (article.innerHTML = text));
 
       document.title = `Text TV ${pageNumber}`;
-      svt.href = `https://www.svt.se/text-tv/webb/${pageNumber}`;
+      //svt.href = `https://www.svt.se/text-tv/webb/${pageNumber}`;
       input.value = pageNumber;
       input.addEventListener("change", e => (window.location.href = `?page=${e.target.value}`));
 
@@ -73,14 +86,18 @@
     <article id="article"></article>
     <footer>
       <nav>
-        <!-- prettier-ignore -->
-        <div><a id="prev">förra sidan</a>  <a id="next">nästa sida</a> </div>
-        <div><input id="input" type="number" min="100" max="999" /></div>
+        <div>
+          <a id="prev" title="förra sidan">&larr;</a>
+          <input id="input" type="number" min="100" max="999" />
+          <a id="next" title="nästa sida">&rarr;</a>
+        </div>
       </nav>
-      <div style="font-size: 0.5rem">
-        <div>Text TV är en tjänst från <a id="svt" href="https://www.svt.se/text-tv/webb" target="_blank">SVT</a>.</div>
-        <div>Denna sida är inte officiell och detta är <a href="https://github.com/albertaillet/texttv" target="_blank">koden</a>.</div>
-      </div>
     </footer>
   </body>
 </html>
+
+<!-- <details style="position: absolute; bottom: 0">
+  <summary>Om Text TV</summary>
+  <div>Text TV är en tjänst från <a id="svt" href="https://www.svt.se/text-tv/webb" target="_blank">SVT</a>.</div>
+  <div>Denna sida är inte officiell och detta är <a href="https://github.com/albertaillet/texttv" target="_blank">koden</a>.</div>
+</details> -->
