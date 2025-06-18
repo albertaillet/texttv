@@ -97,7 +97,7 @@
       };
 
       // Initial load based on the current URL (or default to 100).
-      const initialPage = new URL(window.location.href).searchParams.get("page") ?? "100";
+      const initialPage = new URL(window.location.href).searchParams.get("page") || "100";
       loadPage(initialPage, false);
 
       // Article links and Prev / next arrows.
@@ -107,7 +107,7 @@
       input.addEventListener("change", e => loadPage(e.target?.value));
 
       // Handle back/forward navigation.
-      window.addEventListener("popstate", e => loadPage(e.state?.page ?? "100", false));
+      window.addEventListener("popstate", e => loadPage(e.state?.page || "100", false));
 
       // Keyboard navigation (Arrow keys, vim, wasd)
       const keyToLink = { ArrowLeft: prev, ArrowRight: next, h: prev, l: next, a: prev, d: next };
