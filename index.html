@@ -14,13 +14,15 @@
       body {
         display: flex;
         flex-direction: column;
+        align-items: center;
       }
-      /* Article has at most 43 characters per line, including the newline */
       article {
         flex: 1 1;
-        overflow-y: auto; /* Allow vertical scrolling */
-        white-space: pre-wrap;
-        font-size: min(3.5cqw, 10pt); /* Responsive font size when the viewport is narrow */
+        overflow-y: auto;
+        white-space: pre;
+        width: 40ch; /* Article has at most 40 characters per line */
+        font-size: min(4cqw, 20px); /* Responsive font size when the viewport is narrow */
+        line-height: 1.3;
       }
       footer {
         flex: 0 1;
