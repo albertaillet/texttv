@@ -80,9 +80,13 @@
         svt.href = `https://www.svt.se/text-tv/webb/${pageNumber}`;
         input.value = pageNumber;
         fetch(`https://www.svt.se/text-tv/api/${pageNumber}`)
+          .then(res => {
+            if (!res.ok) throw new Error("Sidan kunde inte hittas.");
+            return res;
+          })
           .then(res => res.json())
           .then(data => {
-            if (data.status === "fail") throw new Error("Sidan kunde inte hittas.");
+            if (data.status === "fail") throw new Error("Sidan finns inte.");
             prev.dataset.page = data.data.prevPage;
             next.dataset.page = data.data.nextPage;
             return data.data.subPages.map(p => p.altText).join("");
