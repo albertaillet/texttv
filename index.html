@@ -69,6 +69,7 @@
       const main = document.getElementById("main"),
         prev = document.getElementById("prev"),
         next = document.getElementById("next"),
+        home = document.getElementById("home"),
         input = document.getElementById("input"),
         svt = document.getElementById("svt"),
         infoBtn = document.getElementById("info-btn"),
@@ -107,18 +108,22 @@
       // Article links and Prev / next arrows.
       [prev, next, main].forEach(el => el.addEventListener("click", e => (e.preventDefault(), loadPage(e.target?.dataset?.page))));
 
+      // Home button
+      home.addEventListener("click", e => (e.preventDefault(), loadPage("100")));
+
       // Manual page input.
       input.addEventListener("change", e => loadPage(e.target?.value));
 
       // Handle back/forward navigation.
       window.addEventListener("popstate", e => loadPage(e.state?.page || "100", false));
 
-      // Keyboard navigation (Arrow keys, vim, wasd)
-      const keyToLink = { ArrowLeft: prev, ArrowRight: next, h: prev, l: next, a: prev, d: next };
+      // Keyboard navigation (Arrow keys, wasd, jkl, home, info).
+      // prettier-ignore
+      const keyToLink = { ArrowLeft: prev, ArrowRight: next, j: prev, l: next, a: prev, d: next,
+                          i: infoBtn, Home: home, h: home, s: home, k: home};
       document.addEventListener("keydown", e => {
         if (document.activeElement === input) return; // Ignore if input is focused
         if (keyToLink[e.key]) keyToLink[e.key].click();
-        if (e.key === "i") infoBtn.click();
         if (e.key === "e") {
           e.preventDefault(); // Prevent default action for 'e' key
           input.focus();
@@ -141,6 +146,7 @@
           <button id="next" data-page="" aria-label="Nästa sida" title="Nästa sida">&rarr;</button>
         </div>
       </nav>
+      <button id="home" style="position: absolute; bottom: 10px; left: 10px" aria-label="Hem" title="Hem">Hem</button>
       <button id="info-btn" style="position: absolute; bottom: 10px; right: 10px">Info</button>
     </footer>
     <dialog id="info-modal">
@@ -149,8 +155,9 @@
       <p>Text TV är en tjänst från <a id="svt" href="https://www.svt.se/text-tv/webb" target="_blank">SVT</a>.</p>
       <p>Denna sida är inte officiell och detta är <a href="https://github.com/albertaillet/texttv" target="_blank">koden</a>.</p>
       <p>Tangentbordskommandon:</p>
-      <p>[&larr;], [A] eller [H] för förra sidan</p>
+      <p>[&larr;], [A] eller [J] för förra sidan</p>
       <p>[&rarr;], [D] eller [L] för nästa sida</p>
+      <p>[Home], [H], [K] eller [S] för startsidan</p>
       <p>[E] för att ändra sidan</p>
       <p>[I] för att öppna denna dialog</p>
     </dialog>
