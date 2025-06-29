@@ -77,14 +77,14 @@
 
       const pageButton = p => `<button data-page="${p}" aria-label="Gå till sida ${p}" title="Gå till sida ${p}">${p}</button>`;
 
-      const loadPage = (pageNumber, push = true) => {
-        if (!pageNumber) return;
-        if (push) history.pushState({ pageNumber }, "", `?page=${pageNumber}`);
+      const loadPage = (page, push = true) => {
+        if (!page) return;
+        if (push) history.pushState({ page }, "", `?page=${page}`);
 
-        document.title = `Text TV ${pageNumber}`;
-        svt.href = `https://www.svt.se/text-tv/webb/${pageNumber}`;
-        input.value = pageNumber;
-        fetch(`https://www.svt.se/text-tv/api/${pageNumber}`)
+        document.title = `Text TV ${page}`;
+        svt.href = `https://www.svt.se/text-tv/webb/${page}`;
+        input.value = page;
+        fetch(`https://www.svt.se/text-tv/api/${page}`)
           .then(res => {
             if (!res.ok) throw new Error("Sidan kunde inte hittas.");
             return res;
