@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="sv">
   <head>
     <meta charset="utf-8" />
@@ -63,6 +63,10 @@
         button {
           color: #00bfff;
         }
+        select {
+          color: white;
+          background-color: black;
+        }
       }
     </style>
     <script type="module">
@@ -71,51 +75,126 @@
         next = document.getElementById("next"),
         home = document.getElementById("home"),
         input = document.getElementById("input"),
-        svt = document.getElementById("svt"),
+        providerSelect = document.getElementById("provider-select"),
+        source = document.getElementById("source"),
         infoBtn = document.getElementById("info-btn"),
         infoModal = document.getElementById("info-modal");
 
+      const fetchJsonFromUrl = async url => {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Sidan kunde inte hittas.");
+        return res.json();
+      };
+
+      const providerSettings = {
+        svt: {
+          name: "SVT",
+          defaultPage: "100",
+          homePage: "100",
+          getSourceUrl: page => `https://www.svt.se/text-tv/webb/${page}`,
+          fetchPage: async page => {
+            const json = await fetchJsonFromUrl(`https://www.svt.se/text-tv/api/${page}`);
+            if (json.status === "fail") throw new Error("Sidan finns inte.");
+            return {
+              prev: json.data.prevPage,
+              next: json.data.nextPage,
+              html: json.data.subPages.map(p => `<article>${p.altText.trimEnd()}</article>`).join("")
+            };
+          }
+        },
+        yle: {
+          name: "Yle",
+          defaultPage: "700",
+          homePage: "700",
+          getSourceUrl: page => `https://yle.fi/tekstitv/txt/${page}_0001.htm`,
+          fetchPage: async page => {
+            const json = await fetchJsonFromUrl(`https://corsproxy.io/?url=https://yle.fi/aihe/yle-ttv/json?P=${page}_0001`);
+            if (!json.data || !json.data.length) throw new Error("Sidan finns inte.");
+
+            const pageData = json.data[0];
+            const parser = new DOMParser();
+
+            // Parse pagination
+            const navDoc = parser.parseFromString(pageData.content.pagination, "text/html");
+            const prevLink = navDoc.querySelector(".js-yle-ttv-prev-page");
+            const nextLink = navDoc.querySelector(".js-yle-ttv-next-page");
+
+            // Parse content
+            const contentDoc = parser.parseFromString(pageData.content.text, "text/html");
+
+            return {
+              prev: prevLink?.dataset?.yleTtvPageName?.split("_")[0] || "",
+              next: nextLink?.dataset?.yleTtvPageName?.split("_")[0] || "",
+              html: `<article>${contentDoc.body.textContent || ""}</article>`
+            };
+          }
+        }
+      };
+
+      let currentProvider = "svt";
+
       const pageButton = p => `<button data-page="${p}" aria-label="Gå till sida ${p}" title="Gå till sida ${p}">${p}</button>`;
 
-      const loadPage = (page, push = true) => {
+      const loadPage = (page, provider, push = true) => {
         if (!page) return;
-        if (push) history.pushState({ page }, "", `?page=${page}`);
 
-        document.title = `Text TV ${page}`;
-        svt.href = `https://www.svt.se/text-tv/webb/${page}`;
+        // Update state
+        currentProvider = provider;
+        if (providerSelect.value !== provider) providerSelect.value = provider;
+
+        // Handle URL update
+        if (push) history.pushState({ page, provider }, "", `?provider=${provider}&page=${page}`);
+
+        document.title = `Text TV ${page} (${providerSettings[provider].name})`;
+        source.href = providerSettings[provider].getSourceUrl(page);
         input.value = page;
-        fetch(`https://www.svt.se/text-tv/api/${page}`)
-          .then(res => {
-            if (!res.ok) throw new Error("Sidan kunde inte hittas.");
-            return res;
-          })
-          .then(res => res.json())
+        providerSettings[provider]
+          .fetchPage(page)
           .then(data => {
-            if (data.status === "fail") throw new Error("Sidan finns inte.");
-            prev.dataset.page = data.data.prevPage;
-            next.dataset.page = data.data.nextPage;
-            return data.data.subPages.map(p => `<article>${p.altText.trimEnd()}</article>`).join("");
+            prev.dataset.page = data.prev;
+            next.dataset.page = data.next;
+            return data.html;
           })
           .then(html => html.replace(/\b(\d{3})\b/g, pageButton))
           .catch(err => `Ett fel uppstod:<br />${err.message}`)
           .then(html => (main.innerHTML = html));
       };
 
-      // Initial load based on the current URL (or default to 100).
-      const initialPage = new URL(window.location.href).searchParams.get("page") || "100";
-      loadPage(initialPage, false);
+      // Initial load based on the current URL
+      const params = new URL(window.location.href).searchParams;
+      const initialProvider = params.get("provider") || "svt";
+      const initialPage = params.get("page") || providerSettings[initialProvider].defaultPage;
 
-      // Article links and Prev / next arrows.
-      [prev, next, main].forEach(el => el.addEventListener("click", e => (e.preventDefault(), loadPage(e.target?.dataset?.page))));
+      // Validate provider exists, fallback to svt
+      currentProvider = providerSettings[initialProvider] ? initialProvider : "svt";
+      loadPage(initialPage, currentProvider, false);
+
+      // Provider switch
+      providerSelect.addEventListener("change", e => {
+        const newProvider = e.target.value;
+        const page = providerSettings[newProvider].defaultPage; // Reset to default page when switching provider
+        loadPage(page, newProvider);
+      });
+
+      // Navigation clicks
+      [prev, next, main].forEach(el =>
+        el.addEventListener("click", e => (e.preventDefault(), loadPage(e.target?.dataset?.page, currentProvider)))
+      );
 
       // Home button
-      home.addEventListener("click", e => (e.preventDefault(), loadPage("100")));
+      home.addEventListener("click", e => {
+        e.preventDefault();
+        loadPage(providerSettings[currentProvider].homePage, currentProvider);
+      });
 
-      // Manual page input.
-      input.addEventListener("change", e => loadPage(e.target?.value));
+      // Manual input
+      input.addEventListener("change", e => loadPage(e.target?.value, currentProvider));
 
       // Handle back/forward navigation.
-      window.addEventListener("popstate", e => loadPage(e.state?.page || "100", false));
+      window.addEventListener("popstate", e => {
+        const p = e.state?.page || providerSettings["svt"].defaultPage;
+        loadPage(p, e.state?.provider || "svt", false);
+      });
 
       // Keyboard navigation (Arrow keys, wasd, jkl, home, info).
       // prettier-ignore
@@ -146,13 +225,23 @@
           <button id="next" data-page="" aria-label="Nästa sida" title="Nästa sida">&rarr;</button>
         </div>
       </nav>
-      <button id="home" style="position: absolute; bottom: 10px; left: 10px" aria-label="Hem" title="Hem">Hem</button>
-      <button id="info-btn" style="position: absolute; bottom: 10px; right: 10px">Info</button>
+      <div style="display: flex; gap: 10px; position: absolute; bottom: 10px; left: 10px">
+        <button id="home" aria-label="Hem" title="Hem">Hem</button>
+        <select id="provider-select" aria-label="Välj källa">
+          <option value="svt">SVT</option>
+          <option value="yle">Yle</option>
+        </select>
+        <p><a id="source" href="#" target="_blank">Källa</a></p>
+      </div>
+
+      <div style="display: flex; gap: 10px; position: absolute; bottom: 10px; right: 10px">
+        <button id="info-btn">Info</button>
+      </div>
     </footer>
     <dialog id="info-modal">
       <form method="dialog"><button style="float: right">X</button></form>
       <h3>Om Webbsidan</h3>
-      <p>Text TV är en tjänst från <a id="svt" href="https://www.svt.se/text-tv/webb" target="_blank">SVT</a>.</p>
+      <p>Text TV är en tjänst från SVT och Yle.</p>
       <p>Denna sida är inte officiell och detta är <a href="https://github.com/albertaillet/texttv" target="_blank">koden</a>.</p>
       <p>Tangentbordskommandon:</p>
       <p>[&larr;], [A] eller [J] för förra sidan</p>
