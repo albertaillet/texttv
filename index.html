@@ -78,7 +78,8 @@
         providerSelect = document.getElementById("provider-select"),
         source = document.getElementById("source"),
         infoBtn = document.getElementById("info-btn"),
-        infoModal = document.getElementById("info-modal");
+        infoModal = document.getElementById("info-modal"),
+        corsProxy = window.atob("aHR0cHM6Ly90ZXh0dHYtcHJveHkuYWxiZXJ0LWQxZi53b3JrZXJzLmRldi8/dXJsPQo=");
 
       const fetchJsonFromUrl = async url => {
         const res = await fetch(url);
@@ -108,7 +109,7 @@
           homePage: "700",
           getSourceUrl: page => `https://yle.fi/tekstitv/txt/${page}_0001.htm`,
           fetchPage: async page => {
-            const json = await fetchJsonFromUrl(`https://corsproxy.io/?url=https://yle.fi/aihe/yle-ttv/json?P=${page}_0001`);
+            const json = await fetchJsonFromUrl(`${corsProxy}https://yle.fi/aihe/yle-ttv/json?P=${page}_0001`);
             if (!json.data || !json.data.length) throw new Error("Sidan finns inte.");
 
             const pageData = json.data[0];
