@@ -222,16 +222,13 @@
           <input id="input" type="text" inputmode="numeric" size="3" minlength="3" maxlength="3" />
           <button id="next" data-page="" aria-label="Nästa sida" title="Nästa sida">&rarr;</button>
         </div>
+        <div style="display: flex; gap: 2ch; justify-content: center">
+          <button id="home" aria-label="Hem" title="Hem">Hem</button>
+          <button id="provider-btn" aria-label="Byt källa" title="Byt källa">Yle</button>
+          <p><a id="source" href="#" target="_blank">Källa</a></p>
+          <button id="info-btn">Info</button>
+        </div>
       </nav>
-      <div style="display: flex; gap: 10px; position: absolute; bottom: 10px; left: 10px">
-        <button id="home" aria-label="Hem" title="Hem">Hem</button>
-        <button id="provider-btn" aria-label="Byt källa" title="Byt källa">Yle</button>
-        <p><a id="source" href="#" target="_blank">Källa</a></p>
-      </div>
-
-      <div style="display: flex; gap: 10px; position: absolute; bottom: 10px; right: 10px">
-        <button id="info-btn">Info</button>
-      </div>
     </footer>
     <dialog id="info-modal">
       <form method="dialog"><button style="float: right">X</button></form>
