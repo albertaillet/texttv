@@ -63,10 +63,6 @@
         button {
           color: #00bfff;
         }
-        select {
-          color: white;
-          background-color: black;
-        }
       }
     </style>
     <script type="module">
@@ -75,7 +71,7 @@
         next = document.getElementById("next"),
         home = document.getElementById("home"),
         input = document.getElementById("input"),
-        providerSelect = document.getElementById("provider-select"),
+        providerBtn = document.getElementById("provider-btn"),
         source = document.getElementById("source"),
         infoBtn = document.getElementById("info-btn"),
         infoModal = document.getElementById("info-modal"),
@@ -141,7 +137,7 @@
 
         // Update state
         currentProvider = provider;
-        if (providerSelect.value !== provider) providerSelect.value = provider;
+        providerBtn.textContent = providerSettings[provider === "svt" ? "yle" : "svt"].name;
 
         // Handle URL update
         if (push) history.pushState({ page, provider }, "", `?provider=${provider}&page=${page}`);
@@ -171,8 +167,9 @@
       loadPage(initialPage, currentProvider, false);
 
       // Provider switch
-      providerSelect.addEventListener("change", e => {
-        const newProvider = e.target.value;
+      providerBtn.addEventListener("click", e => {
+        e.preventDefault();
+        const newProvider = currentProvider === "svt" ? "yle" : "svt";
         const page = providerSettings[newProvider].defaultPage; // Reset to default page when switching provider
         loadPage(page, newProvider);
       });
@@ -228,10 +225,7 @@
       </nav>
       <div style="display: flex; gap: 10px; position: absolute; bottom: 10px; left: 10px">
         <button id="home" aria-label="Hem" title="Hem">Hem</button>
-        <select id="provider-select" aria-label="Välj källa">
-          <option value="svt">SVT</option>
-          <option value="yle">Yle</option>
-        </select>
+        <button id="provider-btn" aria-label="Byt källa" title="Byt källa">Yle</button>
         <p><a id="source" href="#" target="_blank">Källa</a></p>
       </div>
 
