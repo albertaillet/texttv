@@ -24,14 +24,33 @@
       }
       main {
         flex: 1 1;
+        width: 100%;
+        position: relative; /* Makes main the offsetParent of the slides, so slide.offsetTop is a scroll position */
         overflow-y: auto;
         overflow-x: hidden;
+        overscroll-behavior: contain; /* No pull-to-refresh or page rubber banding when swiping past the first or last slide */
       }
       article {
+        margin: 0 auto;
         white-space: pre;
         width: 40ch; /* Article has at most 40 characters per line */
         font-size: min(4cqw, 20px); /* Responsive font size when the viewport is narrow */
         line-height: 1.3;
+      }
+      /* On touch screens the pages are full-height slides that snap into place when swiping, like short-video feeds */
+      @media (pointer: coarse) {
+        main {
+          scroll-snap-type: y mandatory;
+        }
+        .slide {
+          min-height: 100%;
+          scroll-snap-align: start;
+          scroll-snap-stop: always;
+        }
+        .slide:not(.current) {
+          height: 100%; /* Neighbouring pages are exactly one screen tall, so one swipe is one page */
+          overflow: hidden;
+        }
       }
       footer {
         flex: 0 1;
@@ -135,15 +154,44 @@
         }
       };
 
-      let currentProvider = "svt";
+      const touchScreen = window.matchMedia("(pointer: coarse)"); // Touch screens get swipeable slides, see the CSS
+
+      let currentProvider = "svt",
+        currentPage = "",
+        loadCount = 0;
+
+      // Pages are cached for a short while so that the neighbouring slides can be prefetched without refetching on every swipe
+      const cache = new Map();
+      const getPage = (provider, page) => {
+        const key = `${provider}/${page}`;
+        const cached = cache.get(key);
+        if (cached && Date.now() - cached.time < 60_000) return cached.data;
+        const data = providerSettings[provider].fetchPage(page);
+        cache.set(key, { time: Date.now(), data });
+        data.catch(() => cache.delete(key)); // Do not cache failures
+        return data;
+      };
 
       const pageButton = p => `<button data-page="${p}" aria-label="Gå till sida ${p}" title="Gå till sida ${p}">${p}</button>`;
+      const pageHtml = data => data.html.replace(/\b(\d{3})\b/g, pageButton);
+      const errorHtml = err => `Ett fel uppstod:<br />${err.message}`;
+      const slideHtml = (page, current, html) =>
+        `<section class="slide${current ? " current" : ""}" data-slide="${page}">${html}</section>`;
 
-      const loadPage = (page, provider, push = true) => {
+      // Fill a neighbouring slide with its page once it has been fetched
+      const fillSlide = (el, provider) =>
+        getPage(provider, el.dataset.slide)
+          .then(pageHtml, errorHtml)
+          .then(html => (el.isConnected ? (el.innerHTML = html) : null));
+
+      // If the page fails to load, fallback holds the page we came from so that it stays a neighbour and one can go back
+      const loadPage = async (page, provider, push = true, fallback = {}) => {
         if (!page) return;
+        const loadId = ++loadCount;
 
         // Update state
         currentProvider = provider;
+        currentPage = page;
         providerBtn.textContent = providerSettings[provider === "svt" ? "yle" : "svt"].name;
 
         // Handle URL update
@@ -152,16 +200,26 @@
         document.title = `Text TV ${page} (${providerSettings[provider].name})`;
         source.href = providerSettings[provider].getSourceUrl(page);
         input.value = page;
-        providerSettings[provider]
-          .fetchPage(page)
-          .then(data => {
-            prev.dataset.page = data.prev;
-            next.dataset.page = data.next;
-            return data.html;
-          })
-          .then(html => html.replace(/\b(\d{3})\b/g, pageButton))
-          .catch(err => `Ett fel uppstod:<br />${err.message}`)
-          .then(html => (main.innerHTML = html));
+
+        const data = await getPage(provider, page).then(
+          d => ({ ...d, html: pageHtml(d) }),
+          err => ({ prev: "", next: "", ...fallback, html: errorHtml(err) })
+        );
+        if (loadId !== loadCount) return; // Another page was requested in the meantime
+        prev.dataset.page = data.prev;
+        next.dataset.page = data.next;
+
+        // Render the page, and on touch screens also the previous and next pages as slides to swipe to
+        const neighbours = touchScreen.matches;
+        main.innerHTML = [
+          neighbours && data.prev && slideHtml(data.prev, false, "Laddar…"),
+          slideHtml(page, true, data.html),
+          neighbours && data.next && slideHtml(data.next, false, "Laddar…")
+        ]
+          .filter(Boolean)
+          .join("");
+        main.scrollTop = main.querySelector(".current").offsetTop;
+        main.querySelectorAll(".slide:not(.current)").forEach(el => fillSlide(el, provider));
       };
 
       // Initial load based on the current URL
@@ -183,7 +241,29 @@
 
       // Navigation clicks
       [prev, next, main].forEach(el =>
-        el.addEventListener("click", e => (e.preventDefault(), loadPage(e.target?.dataset?.page, currentProvider)))
+        el.addEventListener("click", e => {
+          e.preventDefault();
+          const fallback = el === prev ? { next: currentPage } : el === next ? { prev: currentPage } : {};
+          loadPage(e.target?.dataset?.page, currentProvider, true, fallback);
+        })
+      );
+
+      // Swipe navigation on touch screens: when the scrolling settles on a neighbouring slide, it becomes the current page
+      let touching = false,
+        settleTimer;
+      const onScrollSettle = () => {
+        if (touching || !touchScreen.matches) return;
+        const slides = [...main.children];
+        const i = slides.findLastIndex(el => el.offsetTop <= main.scrollTop + 5); // The slide the view rests on
+        const current = slides.findIndex(el => el.classList.contains("current"));
+        if (!slides[i] || slides[i].dataset.slide === currentPage) return;
+        loadPage(slides[i].dataset.slide, currentProvider, true, i > current ? { prev: currentPage } : { next: currentPage });
+      };
+      const scheduleSettle = () => (clearTimeout(settleTimer), (settleTimer = setTimeout(onScrollSettle, 100)));
+      main.addEventListener("scroll", scheduleSettle, { passive: true });
+      main.addEventListener("touchstart", () => (touching = true), { passive: true });
+      ["touchend", "touchcancel"].forEach(type =>
+        main.addEventListener(type, e => ((touching = e.touches.length > 0), scheduleSettle()), { passive: true })
       );
 
       // Home button
@@ -248,6 +328,7 @@
       <p>[Home], [H], [K] eller [S] för startsidan</p>
       <p>[E] för att ändra sidan</p>
       <p>[I] för att öppna denna dialog</p>
+      <p>Svep upp eller ner för att byta sida på pekskärm</p>
     </dialog>
   </body>
 </html>
