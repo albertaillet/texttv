@@ -30,6 +30,7 @@
         overflow-x: hidden;
         overscroll-behavior: contain; /* No pull-to-refresh or page rubber banding when swiping past the first or last slide */
         touch-action: pan-y pinch-zoom; /* Swipes only scroll vertically, no sideways panning or double-tap zoom */
+        container-type: inline-size; /* Lets the article size its text relative to the width of main */
       }
       .slide {
         display: flex;
@@ -39,7 +40,7 @@
       article {
         white-space: pre;
         width: max-content; /* As wide as its longest line, centred by the slide */
-        font-size: min((100vw - 8px) / 24, 20px); /* 40 characters of 0.6em each fill the page width minus a 4px margin */
+        font-size: min((100cqw - 8px) / 24, 20px); /* 40 characters of 0.6em each fill the width of main minus a 4px margin */
         line-height: 1.3;
       }
       /* On touch screens the pages are full-height slides that snap into place when swiping, like short-video feeds */
